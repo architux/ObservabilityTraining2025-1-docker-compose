@@ -1,0 +1,44 @@
+services:
+  flask_app:
+    container_name: flask_app
+    image: flask_crud_api:1.0.0
+    restart: always
+    build: .
+    environment:
+      - APP_HOST=${APP_HOST}
+      - APP_PORT=${APP_PORT}
+      - DB_URL=${DB_URL}
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://${APP_HOST}:${APP_PORT}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
+    depends_on:
+      flask_db:
+        condition: service_healthy
+        restart: true
+  flask_db:
+    container_name: flask_db
+    image: postgres:15
+    restart: always
+    environment:
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata: {}
